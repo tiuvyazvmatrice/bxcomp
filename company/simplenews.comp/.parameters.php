@@ -2,7 +2,8 @@
 if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) die();
 
 use Bitrix\Main\Localization\Loc;
-use \Bitrix\Main\Loader;
+use Bitrix\Main\Loader;
+use Bitrix\Iblock\IblockTable;
 
 Loc::loadMessages(__FILE__);
 
@@ -10,7 +11,8 @@ if (!Loader::includeModule('iblock'))
     return;
 
 $arIBlock = [];
-$rsIBlock = \Bitrix\Iblock\IblockTable::getList([
+
+$rsIBlock = IblockTable::getList([
     'select' => ['ID', 'NAME'],
     'filter' => ['ACTIVE' => 'Y']
 ]);
@@ -25,7 +27,7 @@ $arComponentParameters = [
     "PARAMETERS" => [
         "IBLOCK_ID" => [
             "PARENT" => "BASE",
-            "NAME" => GetMessage("IBLOCK_ID"),
+            "NAME" => Loc::getMessage("P_SIMP_NEW_IBLOCK_ID"),
             "TYPE" => "LIST",
             "ADDITIONAL_VALUES" => "Y",
             "MULTIPLE" => "N",
@@ -35,7 +37,7 @@ $arComponentParameters = [
         ],
         "ELEMENT_COUNT" => [
             "PARENT" => "BASE",
-            "NAME" => GetMessage("T_IBLOCK_DESC_LIST_CONT"),
+            "NAME" => Loc::getMessage("P_SIMP_NEW_COUNT"),
             "TYPE" => "STRING",
             "DEFAULT" => 6,
         ],

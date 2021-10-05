@@ -3,7 +3,9 @@
 use Bitrix\Main\Loader;
 use Bitrix\Main\UI\PageNavigation;
 use Bitrix\Main\Data\Cache;
+use Bitrix\Main\Localization\Loc;
 
+Loc::loadMessages(__FILE__);
 
 class CSimplenewsComp extends \CBitrixComponent
 {
@@ -15,36 +17,51 @@ class CSimplenewsComp extends \CBitrixComponent
         'ID', 'NAME', 'ACTIVE_FROM', 'PREVIEW_TEXT', 'PREVIEW_PICTURE'
     ];
 
-    public function onPrepareComponentParams($params)
+    /**
+     * Подготавливаем параметры
+     * @param $params
+     * @return array
+     */
+    public function onPrepareComponentParams($params): array
     {
         if ((int)$params['IBLOCK_ID']) {
             $this->filter['IBLOCK_ID'] = $params['IBLOCK_ID'];
         }
+        else {
+            throw new \Exception(Loc::getMessage("C_SIMP_NEW_NOIB"));
+        }
+
+        if ($params['CACHE_TYPE'] == 'N') {
+            $params['CACHE_TIME'] = 0;
+        }
+
+        $params["ELEMENT_COUNT"] = (int)$params['ELEMENT_COUNT'] > 0 ? (int)$params['ELEMENT_COUNT'] : 5;
 
         return $params;
     }
 
-    public function setCache($nav)
-    {
-        return $this->startResultCache(false, [
-            $nav,
-            $this->request->get("YEAR"),
-        ]);
-    }
-
-    private function setFilter()
+    /**
+     * Получаем год, если в GET установлен, то его. Если нет - то текущий
+     * Также проставляем значение для фильтра выборки
+     * @return int
+     */
+    private function setFilter(): int
     {
         $year = (int)$this->request->get("YEAR");
-        if($year == 0) {
-            $this->filter['>=ACTIVE_FROM'] = date('01.01.'.date('Y'));
-            $this->filter['<=ACTIVE_FROM'] = date('31.12.'.date('Y'));
+
+        if ($year == 0) {
+            $year = date('Y');
         }
-        else {
-            $this->filter['>=ACTIVE_FROM'] = date('01.01.'.$year);
-            $this->filter['<=ACTIVE_FROM'] = date('31.12.'.$year);
-        }
+
+        $this->filter['>=ACTIVE_FROM'] = date('01.01.' . $year);
+        $this->filter['<=ACTIVE_FROM'] = date('31.12.' . $year);
+
+        return (int)$year;
     }
 
+    /**
+     * Главный метод
+     */
     public function executeComponent()
     {
         $nav = $this->getNav();
@@ -53,19 +70,24 @@ class CSimplenewsComp extends \CBitrixComponent
             if (!Loader::includeModule("iblock")) {
                 return;
             }
-
-            $this->setFilter();
+            $currentYear = $this->setFilter();
             $res = $this->selectElements();
             $this->arResult = $res;
             $nav->setRecordCount($this->arResult['COUNT']);
             $this->arResult['NAV'] = $nav;
+            $this->arResult['CURRENT_YEAR'] = $currentYear;
 
             $this->includeComponentTemplate();
         } catch (\Exception $e) {
+            echo $e->getMessage();
             return;
         }
     }
 
+    /**
+     * Строим навигацию
+     * @return PageNavigation
+     */
     protected function getNav()
     {
         $nav = new PageNavigation("users_page");
@@ -74,38 +96,63 @@ class CSimplenewsComp extends \CBitrixComponent
         return $nav;
     }
 
-    protected function selectElements()
+    /**
+     * Устанавливаем заголовок с кол-вом новостей в выбранном году
+     * @param int $count
+     */
+    protected function setTitle(int $count): void
+    {
+        global $APPLICATION;
+
+        $APPLICATION->SetTitle(str_replace('#COUNT#', $count, Loc::getMessage("C_SIMP_NEW_COUNT")));
+    }
+
+    /**
+     * Получаем все годы, в которые были новости
+     * @return array
+     */
+    protected function getNewsYears(): array {
+        $dbYears = Bitrix\Iblock\ElementTable::GetList([
+            'select' => ['YEARS'],
+            'order' => ['YEARS' => 'DESC'],
+            'filter' => ['ACTIVE' => "Y", '!ACTIVE_FROM' => null],
+            'count_total' => true,
+            'runtime' => [
+                'YEARS' => [
+                    'data_type' => 'integer',
+                    'expression' => ['YEAR(%s)', 'ACTIVE_FROM'],
+                ],
+            ],
+            'group' => ['YEARS']
+        ]);
+
+        while ($arYear = $dbYears->Fetch()) {
+            $elementData[] = $arYear['YEARS'];
+        }
+
+        return $elementData;
+    }
+
+    /**
+     * Получаем новости
+     * @return array
+     */
+    protected function selectElements(): array
     {
         $nav = $this->getNav();
 
         $cacheManager = Bitrix\Main\Application::getInstance()->getTaggedCache();
         $cache = Cache::createInstance();
 
-        $cacheId = md5('simplenews'.serialize($this->filter).serialize($this->arParams).serialize($nav));
-        $cacheDir = '/simplenews1/';
+        $cacheId = md5('simplenews' . serialize($this->filter) . serialize($this->arParams) . serialize($nav));
+        $cacheDir = '/simplenews';
 
         if ($cache->initCache($this->arParams['CACHE_TIME'], $cacheId, $cacheDir)) {
-
             $vars = $cache->GetVars();
             $elementData = $vars['arResult'];
-
         } elseif ($cache->startDataCache()) {
-            $dbYears = Bitrix\Iblock\ElementTable::GetList([
-                'select' => ['YEARS'],
-                'filter' => ['ACTIVE' => "Y", '!ACTIVE_FROM' => null],
-                'count_total' => true,
-                'runtime' => [
-                    'YEARS' => [
-                        'data_type' => 'integer',
-                        'expression' => ['YEAR(%s)', 'ACTIVE_FROM'],
-                    ],
-                ],
-                'group' => ['YEARS']
-            ]);
 
-            while ($arYear = $dbYears->Fetch()) {
-                $elementData['YEARS'][] = $arYear['YEARS'];
-            }
+            $elementData['YEARS'] = $this->getNewsYears();
 
             $dbElements = \Bitrix\Iblock\ElementTable::GetList([
                 'select' => $this->select,
@@ -114,10 +161,6 @@ class CSimplenewsComp extends \CBitrixComponent
                 'count_total' => true,
                 'limit' => $nav->getLimit(),
                 'offset' => $nav->getOffset(),
-                'cache' => array(
-                    'ttl' => $this->arParams["CACHE_TIME"],
-                    'cache_joins' => true,
-                )
             ]);
 
             while ($arElement = $dbElements->Fetch()) {
@@ -131,7 +174,7 @@ class CSimplenewsComp extends \CBitrixComponent
             $elementData['COUNT'] = $dbElements->getCount();
 
             $cacheManager->StartTagCache($cacheDir);
-            $cacheManager->RegisterTag("iblock_id_".$this->arParams['IBLOCK_ID']);
+            $cacheManager->RegisterTag("iblock_id_" . $this->arParams['IBLOCK_ID']);
             $cacheManager->EndTagCache();
 
             if (empty($elementData))
@@ -142,8 +185,7 @@ class CSimplenewsComp extends \CBitrixComponent
             ]);
         }
 
-        global $APPLICATION;
-        $APPLICATION->SetTitle("Количество элементов: ".$elementData['COUNT']);
+        $this->setTitle($elementData['COUNT']);
 
         return $elementData;
     }

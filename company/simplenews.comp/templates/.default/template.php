@@ -2,8 +2,10 @@
 if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) die();
 ?>
 
-<? foreach ($arResult['YEARS'] as $year) {
-    echo '<a href="?YEAR=' . $year . '">' . $year . '</a> ';
+<?
+foreach ($arResult['YEARS'] as $year) {
+    $currentCss = $year == $arResult['CURRENT_YEAR'] ? "font-weight: bold;" : "";
+    echo '<a href="?YEAR=' . $year . '" style="'.$currentCss.'">' . $year . '</a> ';
 } ?>
 <table>
 <? foreach ($arResult['ITEMS'] as $item) { ?>
