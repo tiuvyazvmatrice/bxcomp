@@ -21,9 +21,9 @@ while ($arr = $rsIBlock->Fetch())
 
 unset($arr, $rsIBlock);
 
-$arComponentParameters = array(
-    "PARAMETERS" => array(
-        "IBLOCK_ID" => array(
+$arComponentParameters = [
+    "PARAMETERS" => [
+        "IBLOCK_ID" => [
             "PARENT" => "BASE",
             "NAME" => GetMessage("IBLOCK_ID"),
             "TYPE" => "LIST",
@@ -32,15 +32,15 @@ $arComponentParameters = array(
             "SIZE" => 5,
             "VALUES" => $arIBlock,
             "REFRESH" => "Y",
-        ),
-        "ELEMENT_COUNT" => array(
+        ],
+        "ELEMENT_COUNT" => [
             "PARENT" => "BASE",
             "NAME" => GetMessage("T_IBLOCK_DESC_LIST_CONT"),
             "TYPE" => "STRING",
             "DEFAULT" => 6,
-        ),
-        "CACHE_TIME" => array(
+        ],
+        "CACHE_TIME" => [
             "DEFAULT" => 3600
-        )
-    )
-);
+        ]
+    ]
+];
