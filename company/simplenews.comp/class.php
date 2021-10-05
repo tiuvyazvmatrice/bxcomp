@@ -27,9 +27,6 @@ class CSimplenewsComp extends \CBitrixComponent
         if ((int)$params['IBLOCK_ID']) {
             $this->filter['IBLOCK_ID'] = $params['IBLOCK_ID'];
         }
-        else {
-            throw new \Exception(Loc::getMessage("C_SIMP_NEW_NOIB"));
-        }
 
         if ($params['CACHE_TYPE'] == 'N') {
             $params['CACHE_TIME'] = 0;
