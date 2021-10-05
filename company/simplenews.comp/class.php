@@ -81,12 +81,14 @@ class CSimplenewsComp extends \CBitrixComponent
         $cacheManager = Bitrix\Main\Application::getInstance()->getTaggedCache();
         $cache = Cache::createInstance();
 
-        $cacheId = 'usergroups'.md5(serialize($this->filter).serialize($this->arParams).serialize($nav));
-        $cacheDir = '/Simplenews1';
+        $cacheId = md5('simplenews'.serialize($this->filter).serialize($this->arParams).serialize($nav));
+        $cacheDir = '/simplenews1/';
 
         if ($cache->initCache($this->arParams['CACHE_TIME'], $cacheId, $cacheDir)) {
+
             $vars = $cache->GetVars();
             $elementData = $vars['arResult'];
+
         } elseif ($cache->startDataCache()) {
             $dbYears = Bitrix\Iblock\ElementTable::GetList([
                 'select' => ['YEARS'],
@@ -139,6 +141,7 @@ class CSimplenewsComp extends \CBitrixComponent
                 'arResult' => $elementData,
             ]);
         }
+
         global $APPLICATION;
         $APPLICATION->SetTitle("Количество элементов: ".$elementData['COUNT']);
 

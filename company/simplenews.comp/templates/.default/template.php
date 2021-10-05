@@ -17,10 +17,6 @@ if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) die();
 </table>
 
 <?php
-echo '<pre>';
-var_dump($arResult["NAV"]);
-echo '</pre>';
-
 $APPLICATION->IncludeComponent(
     "bitrix:main.pagenavigation",
     ".default",
