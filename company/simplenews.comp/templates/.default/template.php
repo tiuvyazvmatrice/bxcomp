@@ -3,7 +3,7 @@ if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) die();
 ?>
 
 <? foreach ($arResult['YEARS'] as $year) {
-    echo '<a href="?YEAR=' . $year . '">' . $year . '</a>';
+    echo '<a href="?YEAR=' . $year . '">' . $year . '</a> ';
 } ?>
 <table>
 <? foreach ($arResult['ITEMS'] as $item) { ?>
@@ -17,8 +17,9 @@ if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) die();
 </table>
 
 <?php
-
-
+echo '<pre>';
+var_dump($arResult["NAV"]);
+echo '</pre>';
 
 $APPLICATION->IncludeComponent(
     "bitrix:main.pagenavigation",
